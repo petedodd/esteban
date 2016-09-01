@@ -7,7 +7,6 @@
 tmp/data/**
 tmp/graphs/**
 .DS_Store
-**.rda
 inst/doc
 **/figs/*.pdf
 **_cache/**
