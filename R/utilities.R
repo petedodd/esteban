@@ -153,7 +153,7 @@ runMCMC <- function(tbp,LLP,NI=200,NW=20,previous=NULL){
 ##' @author Pete Dodd
 ##' @export
 prepMCMC <- function(X,nsamps=150,burnin=150,NW=20){
-    if(!nrow(X)%%NW) stop('nrow(X) must have NW as a divisor!')
+    if(nrow(X)%%NW) stop('nrow(X) must have NW as a divisor!')
     if(NW*burnin>=nrow(X)){
         warning('NW*burnin>=nrow(X)! Using 3/4 of nrow(X)...')
         keep <- round(.75*nrow(X)):nrow(X)

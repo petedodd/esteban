@@ -86,24 +86,21 @@ The underlying model is implemented in Fortran 90 for speed and wrapped in the f
 
 ## Installation
 
-A user must first install an up-to-date version of R.
-
-The model dependencies should be installed first by typing
+A user must first install an up-to-date version of R and `devtools` by typing
 
 ```{r,eval=FALSE}
-deps <- c('ggplot2','data.table','scales') #needed
-pkgs <- installed.packages()[,"Package"] #got
-if(!all(deps %in% pkgs)) install.packages(deps[!(deps %in% pkgs)]) #add
+install.packages('devtools')
 ```
 
-at the R command prompt (or copy-pasting this code).
+Since the model uses compiled code, R development tools must also be present.
 
+Then model dependencies should be installed first by typing
 
 ```{r,eval=FALSE}
-install.packages('esteban_xxx.zip',repos=NULL)
+devtools::install_github('petedodd/esteban',dependencies=TRUE,build_vignettes=FALSE)
 ```
 
-from the same working directory as the package file. Here, the file name should be altered to match the version downloaded. Alternatively, most R GUIs include a menu-driven method to install packages from a file.
+Alternatively, the codebase can be downloaded, and the package built and installed using `R CMD build` and `R CMD INSTALL` in the standard fashiong. The `--no-build-vignettes` option for `build` is recommended as this vignette is slow to run.
 
 
 
@@ -225,7 +222,7 @@ mappar <- getMAP(P)
 Then
 
 ```{r, eval=TRUE,fig.width=7, fig.height=7,fig.pos="H"}
-testocsp <- condsimmer(dat=P$dat,n=1,P,mappar$par,show=TRUE,truedat=NULL,V=P$V,
+testocsp <- condsimmer(dat=NULL,n=1,P,mappar$par,show=TRUE,truedat=P$dat,V=P$V,
                         west=1,stoch=0,coarse = 1) #n=1 deterministic version
 ```
 
@@ -239,7 +236,10 @@ testmc <- runMCMC(mappar$par,P)
 Then..
 
 ```{r, eval=TRUE}
-mcsamp <- prepMCMC(testmc,nsamps=150,burnin=150)
+print(dim(testmc))
+print(!nrow(testmc)%%20)
+#mcsamp <- prepMCMC(testmc,nsamps=150,burnin=150,NW=20)
+
 ```
 
 todo: pairs, then plot
