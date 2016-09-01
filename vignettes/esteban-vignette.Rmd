@@ -16,21 +16,12 @@ knitr::opts_chunk$set(cache=TRUE)
 ```
 
 
-# Purpose
+# Background
 
-This document is an embryonic vignette for the `esteban` R package, and also serves as an interim progress report for the TB MAC funded project to further develop the approach and software.
-
-The overall aims of the project are to
-
-- incorporate HIV/ART structure into the existing framework
-- make the model available as an R package
-- investigate alternative inference methodologies
-- investigate the relative informativeness of different data sources
-
-The interim deliverables are for an R package and vignette to be available, with example results. This document is the current package vignette, and the current package can be downloaded from the links in the Installation section below
+This document is an embryonic vignette for the `esteban` R package. The further development of this work, the HIV/ART structure and package development was funded by [TB-MAC](http://www.tb-mac.org)
 
 
-# Introduction
+# Rationale
 
 Tuberculosis (TB) burden includes incidence, mortality and prevalence. Most often estimates of incidence are based on notification data (cases of TB detected and reported to authorities), inflated by a factor to reflect an imperfect case detection rate (CDR). Deaths due to TB may be coded with TB as the cause in vital registration (VR) systems, but as with notifications, VR data will differ from the true mortality due to TB. Well-conducted prevalence surveys provide an unbiased estimate of TB prevalence, but are expensive. Recently there has been a number of TB prevalence surveys undertaken, particularly in high-burden settings with imperfectly functioning detection/notification systems and imperfect or absent VR systems. Making estimates about one facet of burden from data on another relies on modelling assumptions on the relationships between then (e.g. case-fatality assumptions to relate incidence to mortality). The aim of this project is to develop a statistically rigorous transmission-modelling framework that allows for all the available data to be used to make statements about all aspects of burden.
 
@@ -111,6 +102,8 @@ Various forms of data are included with the package:
 - Birth and migration rates by time and country
 - UNAIDS HIV prevalence and ART coverage estimates
 - data on HIV/ART related survival and progression by CD4 county, age, sex, and region from Avenir's AIM model
+
+The TB and mortality data are from 2014.
 
 To look up and prepare data for a specific country to use in the model (specified by the 3 letter ISO code), you can call
 
@@ -249,7 +242,7 @@ testocsp <- condsimmer(dat=P$dat,P,mcsamp[1:150,],show=TRUE,truedat=P$dat,V=P$V,
                         west=1,stoch=1,coarse = 1) #conditioned
 
 ```
-![Stochastic model conditioned on data](figs/condsimmer_detunc.png)
+![Stochastic model conditioned on data](figs/condsimmer_cond.png)
 
 ## Other details ##
 
