@@ -6,6 +6,7 @@ If you have an R installation with a working development environment and devtool
 
 devtools::install_github('petedodd/esteban',dependencies=TRUE,build_vignettes=FALSE)
 
+The fortran random number generation routines are linked to R's random number stream modifying and extending some fortran routines by Alan Miller.
 
 ## Acknowledgements ##
 

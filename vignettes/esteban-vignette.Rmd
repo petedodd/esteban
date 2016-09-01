@@ -34,25 +34,6 @@ The interim deliverables are for an R package and vignette to be available, with
 
 Tuberculosis (TB) burden includes incidence, mortality and prevalence. Most often estimates of incidence are based on notification data (cases of TB detected and reported to authorities), inflated by a factor to reflect an imperfect case detection rate (CDR). Deaths due to TB may be coded with TB as the cause in vital registration (VR) systems, but as with notifications, VR data will differ from the true mortality due to TB. Well-conducted prevalence surveys provide an unbiased estimate of TB prevalence, but are expensive. Recently there has been a number of TB prevalence surveys undertaken, particularly in high-burden settings with imperfectly functioning detection/notification systems and imperfect or absent VR systems. Making estimates about one facet of burden from data on another relies on modelling assumptions on the relationships between then (e.g. case-fatality assumptions to relate incidence to mortality). The aim of this project is to develop a statistically rigorous transmission-modelling framework that allows for all the available data to be used to make statements about all aspects of burden.
 
-## Inference problem
-
-The inference problem can be formalised in a Bayesian setting with the following definitions:
-
-- $X$ the unobserved variables, in this case: TB incidence, mortality and prevalence
-- $Y$ the observed variables, in this case: TB notifications, TB vital registrations, and the result from a prevalence survey
-- $\theta$ underlying model parameters, in this case: parameters on TB natural history, transmission and detection
-- $\pi(\theta)$ a probability distribution quantifying prior beliefs about $\theta$
-
-We would like to develop a posterior distribution for the unobserved burden $X$ given observations $Y$
-
-$$P(X|Y) = \int \text{d}\theta. P(X|Y\theta)P(\theta|Y).$$
-
-The posterior for the underlying model parameters $P(\theta | Y)$ is also of interest an obtained by applying a Bayesian sampling scheme to the marginal likelihood
-
-$$P(Y|\theta) = \int \text{d}X. P(Y|X\theta)P(X|\theta). $$
-
-We will refer to this stage as the *parameter estimation problem*, and refer to the problem of conditionally simulating from the model given a value of $\theta$ sampled from a posterior as the *filtering problem*. These stages are combined to provide an overall uncertain estimate of trajectories, which can be thought of as averaging the uncertain trajectory estimates (conditional on the data) across a range of model parameters (conditional on the data).
-
 
 
 ## Model structure
@@ -62,15 +43,17 @@ The model is a stochastic age-, sex- and HIV/ART-structured transmission model. 
 $$ \log(CDR_{t+1}) = \log(CDR_t) + \text{d}CDR + \frac{\epsilon_t}{\theta} $$
 $$ \epsilon_t \sim N(0,1) $$
 
+Various deterministic approximations to the model are used to approximate the marginal likelihood for inference.
+
 ### TB structure
 
-Figure 1 below gives an overview of how the TB model is organised: the red boxes represent observed quantities ($Y$ in the notation above), squares represent counts whereas diamonds represent rates. True mortality (2) shows up in the VR system (1); prevalent TB (5) resolves either in notification (4) or non-notification; the prevalent pool of TB (whether destined for notification or not) may be sampled in a prevalence survey (5); incidence arises from the underlying population state ($X_t$ here not to be confused with the notation for unobserved variables above), influenced by prevalence via the force-of-infection (7); and finally, the force-of-infection also influences the underlying population state at future times by changing the proportion of each category latently infected with the TB bacillus (9).
+Figure 1 below gives an overview of how the TB model is organised: the red boxes represent observed quantities ($Y$ in the notation below), squares represent counts whereas diamonds represent rates. True mortality (2) shows up in the VR system (1); prevalent TB (5) resolves either in notification (4) or non-notification; the prevalent pool of TB (whether destined for notification or not) may be sampled in a prevalence survey (5); incidence arises from the underlying population state ($X_t$ here not to be confused with the notation for unobserved variables below), influenced by prevalence via the force-of-infection (7); and finally, the force-of-infection also influences the underlying population state at future times by changing the proportion of each category latently infected with the TB bacillus (9).
 
 Each disease state inherits the structure from the underlying population, which is described in the next section.
 
 ![Overview model structure](figs/TBests3.png)
 
-\pagebreak
+<!-- \pagebreak -->
 
 ### Demographic & HIV/ART structure
 
@@ -104,7 +87,7 @@ Alternatively, the codebase can be downloaded, and the package built and install
 
 
 
-&nbsp;
+<!-- &nbsp; -->
 
 ## Use
 
@@ -140,7 +123,6 @@ and its demography and patterns of HIV/ART.
 The model also requires a list of parameters relevant to TB. A matrix with ranges for these parameters is included as `rngs`. A parameter list corresponding to these midpoints can be generated by
 
 ```{r, eval=TRUE}
-data(rngs)
 tbp <- as.list(rowMeans(rngs))
 
 ```
@@ -200,11 +182,12 @@ P <- getCountryAimParms('MWI')       #MWI = Malawi
 
 If the number of runs is set to zero, it can be used for simply inspecting the data:
 
-```{r, eval=TRUE,fig.width=7, fig.height=7,fig.pos="H"}
+```{r, eval=FALSE,fig.width=7, fig.height=7,fig.pos="H"}
 testocsp <- condsimmer(dat=P$dat,n=0,P,tbp,show=TRUE,truedat=NULL,V=P$V,
                         west=1,stoch=0,coarse = 1) #n=0 just show data
 
 ```
+![Showing data](figs/condsimmer_data.png)
 
 With `west=1` the WHO estimates are also plotted (red lines). N.B. WHO mortality shown is TB deaths in HIV-negative people only whereas the model output includes mortality due to HIV-positive TB cases.
 
@@ -215,16 +198,18 @@ N.B. Many of the following examples are relatively slow (a few minutes for this 
 
 To calibrate the TB model parameters by searching for the maximum a posteriori (MAP) value, one uses the following function (SLOW):
 
-```{r, eval=TRUE}
+```{r, eval=FALSE}
 mappar <- getMAP(P)
 ```
 
 Then one can use `condsimmer` in deterministic mode to check the associated dynamics.
 
-```{r, eval=TRUE,fig.width=7, fig.height=7,fig.pos="H"}
+```{r, eval=FALSE,fig.width=7, fig.height=7,fig.pos="H"}
 testocsp <- condsimmer(dat=NULL,n=1,P,mappar$par,show=TRUE,truedat=P$dat,V=P$V,
                         west=1,stoch=0,coarse = 1) #n=1 deterministic version
 ```
+
+![Deterministic MAP fit with uncertainty](figs/condsimmer_det.png)
 
 N.B. by using `truedat`, we see the supplied data without conditioning on it. It is important in deterministic mode that `dat=NULL` or a dimension mis-match error will occur. `truedat` can also differ from `dat` and be used for simulation studies.
 
@@ -232,24 +217,26 @@ N.B. by using `truedat`, we see the supplied data without conditioning on it. It
 
 To generate a sample from the posterior around this MAP estimate, one uses an MCMC routine (V.SLOW):
 
-```{r, eval=TRUE}
+```{r, eval=FALSE}
 testmc <- runMCMC(mappar$par,P)
 ```
 
 This is a parallel adaptive MCMC routine that by default takes 200 steps with `NW=20` chains. To pick a thinned sample from after a burn in period, one can use the following utility function:
 
-```{r, eval=TRUE}
+```{r, eval=FALSE}
 mcsamp <- prepMCMC(testmc,nsamps=150,burnin=150)
 
 ```
 
+
 The uncertainty associated with the parameter uncertainty can be visualized by running the deterministic model for 100 parameter sets and graphing (moderately SLOW):
 
-```{r, eval=TRUE,fig.width=7, fig.height=7,fig.pos="H"}
+```{r, eval=FALSE,fig.width=7, fig.height=7,fig.pos="H"}
 testocsp <- condsimmer(dat=NULL,P,mcsamp[1:100,],show=TRUE,truedat=P$dat,V=P$V,
                         west=1,stoch=0,coarse = 1) # deterministic version
 
 ```
+![Deterministic model with parameter uncertainty](figs/condsimmer_detunc.png)
 
 N.B. Supplying a `data.frame` of parameters overrides `n` to be the number of runs.
 
@@ -257,12 +244,12 @@ N.B. Supplying a `data.frame` of parameters overrides `n` to be the number of ru
 
 One can also condition the stochastic version of the model on the observed data, across a range of sampled parameter values. The runs conditioned on the observations agree very precisely with the notification data, but are more uncertain away from data.
 
-```{r, eval=TRUE,fig.width=7, fig.height=7,fig.pos="H"}
+```{r, eval=FALSE,fig.width=7, fig.height=7,fig.pos="H"}
 testocsp <- condsimmer(dat=P$dat,P,mcsamp[1:150,],show=TRUE,truedat=P$dat,V=P$V,
                         west=1,stoch=1,coarse = 1) #conditioned
 
 ```
-
+![Stochastic model conditioned on data](figs/condsimmer_detunc.png)
 
 ## Other details ##
 
@@ -294,145 +281,21 @@ testocsp <- condsimmer(dat=P$dat,P,mcsamp[1:150,],show=TRUE,truedat=P$dat,V=P$V,
 | HTSd   | duration notified TB in PLHIV |
 
 
+### Inference problem ###
 
-<!-- ## Examining some TB model output -->
+The inference problem can be formalised in a Bayesian setting with the following definitions:
 
-<!-- The object `test` contains a snapshot of the population at the final time, and a set of time-series records. -->
+- $X$ the unobserved variables, in this case: TB incidence, mortality and prevalence
+- $Y$ the observed variables, in this case: TB notifications, TB vital registrations, and the result from a prevalence survey
+- $\theta$ underlying model parameters, in this case: parameters on TB natural history, transmission and detection
+- $\pi(\theta)$ a probability distribution quantifying prior beliefs about $\theta$
 
-<!-- We can examine some of the model time-series output (see Figure 8). -->
+We would like to develop a posterior distribution for the unobserved burden $X$ given observations $Y$
 
-<!-- ```{r, eval=TRUE,fig.width=7, fig.height=7,fig.pos="H",fig.cap="A single model realisation"} -->
-<!-- dat0 <- test$rec -->
-<!-- testm <- melt(dat0[,c('t','prev','TBI','deaths','dreg','notes')],id='t') -->
-<!-- ggplot(data=testm,aes(t,value)) + geom_line()  + facet_wrap(~variable,scales = 'free_y') -->
-<!-- ``` -->
+$$P(X|Y) = \int \text{d}\theta. P(X|Y\theta)P(\theta|Y).$$
 
-<!-- ## The filtering problem -->
+The posterior for the underlying model parameters $P(\theta | Y)$ is also of interest an obtained by applying a Bayesian sampling scheme to the marginal likelihood
 
-<!-- As described above, one part of the estimation procedure is to simulate from the model conditional on the observed data. The current package achieves this using an Ensemble Kalman Filter (EnKF). To illustrate its use, let us make a new dataset `dat1`: -->
+$$P(Y|\theta) = \int \text{d}X. P(Y|X\theta)P(X|\theta). $$
 
-
-<!-- ```{r, eval=TRUE} -->
-<!-- ## dat1 omits all but one prevalence point -->
-<!-- dat1 <- dat0 -->
-<!-- dat1$prev <- NA -->
-<!-- dat1$prev[30] <- dat0$prev[30] -->
-<!-- ``` -->
-<!-- This means that `dat0` contains the underlying true data for the model, but `dat1` has had all prevalence data but one removed (which is here treated as a perfectly precise measurement). In the final version, posterior uncertainty in the model parameters will be represented by a sample from a MCMC routine. Here, without conditioning, we consider small perturbations around the parameters used to generate this realisation of output data: -->
-
-
-<!-- ```{r, eval=TRUE} -->
-<!-- TBPZ <- as.data.frame(tbp)              #original parms -->
-<!-- TBPZ <- TBPZ[rep(1,150),]               #150x -->
-<!-- TBPZ <- TBPZ*(1+.05*(runif(prod(dim(TBPZ)))-.5)) #wobble -->
-<!-- ``` -->
-<!-- Large perturbations in these parameters which are not conditioned on the data will result in simulations very far from the data, and this is likely to generate instability when the EnKF is applied. By specifying a sample of size 150 we are using 150 model runs to generate a set of simulations (run time $\sim$ 30s) conditional on the notifications (`notes`), vital registrations (`dreg`) and a single prevalence point (`prev`). With the option `show=TRUE`, a graph is produced (Figure 9). -->
-
-<!-- ```{r, eval=TRUE,fig.width=7, fig.height=7,fig.pos="H",fig.cap="Conditional simuation given notification, VR  and prevalence data at one time (blue)"} -->
-<!-- testnew <- condsimmer(dat=dat1,P,TBPZ,show=TRUE,truedat=dat0) -->
-<!-- ``` -->
-
-<!-- <\!-- &nbsp; -\-> -->
-
-<!-- Since the simulations are (approximately) conditioned on `notes`, `dreg`, and the value of `prev` at time 30 (blue square), the simulations run almost on top of the true data (red) for these quantities with little variation. The predictions given this data for TB incidence `TBI`, TB deaths `deaths` and prevalence away from data are imperfect but close to the truth (red points). -->
-
-<!-- In addition to returning the graph, the `testnew` object contains the underlying data in long-form. -->
-
-<!-- To illustrate this conditional simulation applied to a different simulated dataset, we can repeat these steps, obtaining Figure 10. -->
-
-<!-- ```{r, echo=FALSE, eval=TRUE,fig.width=7, fig.height=7,fig.pos="H",fig.cap="Conditional simuation given different notification, VR  and prevalence data at one time (blue)"} -->
-<!-- test <- AimDynFLD(P,tbp,stoch=TRUE,coarse = TRUE,graph=FALSE) #stochastic version -->
-<!-- dat0 <- test$rec -->
-<!-- dat1 <- dat0 -->
-<!-- dat1$prev <- NA -->
-<!-- dat1$prev[30] <- dat0$prev[30] -->
-<!-- TBPZ <- as.data.frame(tbp)              #original parms -->
-<!-- TBPZ <- TBPZ[rep(1,150),]               #150x -->
-<!-- TBPZ <- TBPZ*(1+.05*(runif(prod(dim(TBPZ)))-.5)) #wobble -->
-<!-- testnew <- condsimmer(dat=dat1,P,TBPZ,show=TRUE,truedat=dat0) -->
-<!-- ``` -->
-
-
-
-<!-- ## The parameter estimation problem -->
-
-<!-- The approach taken to the parameter estimation is to use a deterministic approximation to the dynamics of the mean and variances, and compute the marginal likelihood in a Gaussian approximation. This means that (under this approximation) the integration marginal likelihood can be computed in closed form and only a single model run is needed to compute the marginal likelihood in a sampling routine. Currently, the approximation for the mean quantities is working, but the approximation for the variance dynamics needs further analysis. We also intend to include computation of the gradient of the likelihood, to facilitate efficient determination of the maximum *a posteriori* parameter estimate and enable use of Hamiltonian Monte Carlo routines for inference. -->
-
-
-<!-- # Next steps -->
-
-<!-- The next steps on this project are: -->
-
-<!-- - improvement of variance approximations and inclusion of gradient computations -->
-<!-- - inclusion of parameter estimation routines to represent parameter uncertainty -->
-<!-- - inclusion of HIV/TB parameters on top to change progression rates/durations dependent on HIV-status -->
-<!-- - application to real data once simulation study is completed -->
-
-<!-- Known bugs: -->
-
-<!-- - notch in ART start data from AIM -->
-<!-- - currently won't gracefully handle fetching parameters for countries not appearing in HIV databases (typically those with low HIV prevalence) -->
-
-<!-- If you find other bugs, please contact me at: [p.j.dodd@sheffield.ac.uk](mailto:p.j.dodd@sheffield.ac.uk) -->
-
-
-<!-- #New examples -->
-
-<!-- ```{r} -->
-<!-- P <- getCountryAimParms('NGA') -->
-<!-- dump <- AimDynFLD(P,tbp,stoch=FALSE,coarse = FALSE,graph=TRUE) -->
-
-<!-- ## === running the model -->
-<!-- #test <- AimDynFLD(P,tbp,stoch=FALSE,graph=TRUE) #deterministic version, with check graphs -->
-<!-- test <- AimDynFLD(P1,tbp,stoch=TRUE,coarse = TRUE,graph=FALSE) #stochastic version, using coarse time-step for TB -->
-<!-- testd <- AimDynFLD(P,tbp,stoch=FALSE,coarse = FALSE,graph=FALSE) #deterministic version -->
-<!-- test$rec$prev <- test$rec$DD + test$rec$DU #total prevalence = to-be-detected + to-be-undetected -->
-<!-- test$rec$t <- 1:nrow(test$rec)             #time -->
-
-<!-- #ggplot(data=test$rec,aes(t,prev)) + geom_point()   #true prevalence -->
-
-<!-- ## dat0 is a data set with true quantities -->
-<!-- dat0 <- test$rec -->
-<!-- dat0$t <- 1:nrow(dat0) + P1$syear -1 -->
-
-<!-- ## dat1 omits all but one prevalence point -->
-<!-- dat1 <- dat0 -->
-<!-- dat1$prev100k <- NA -->
-<!-- dat1$prev100k[30] <- dat0$prev100k[30] -->
-<!-- dat1$dreg <- NA -->
-<!-- dat1$dreg[40:42] <- dat0$dreg[40:42] -->
-<!-- dat1$notes[1:20] <- NA -->
-
-<!-- ## add in a replicate variable for plotting against simulation of several runs below -->
-<!-- dat1$replicate <- dat0$replicate <- 0 -->
-
-
-<!-- testocsp <- condsimmer(dat=dat1,P1,tbp,n=0,show=TRUE,truedat=dat0,V=(dat1$prev100k/10),west=1) #n=0 plots data only -->
-<!-- testocsp <- condsimmer(dat=NULL,P1,tbp,n=50,show=TRUE,truedat=dat0,V=(dat1$prev100k/10),west=1) #no conditioning, more vars -->
-
-<!-- testocsp <- condsimmer(dat=dat1,P1,tbp,n=50,show=TRUE,truedat=dat0,V=(dat1$prev100k/10),west=1) -->
-
-<!-- P <- getCountryAimParms('MWI') #MWI -->
-<!-- P1 <- getCountryAimParms('CHN') #MWI -->
-<!-- #ndat<- getCountryTBData(P1) -->
-<!-- ##testocsp <- condsimmer(dat=ndat$dat,P1,tbp,n=0,show=TRUE,truedat=dat0,V=ndat$V,west=1) #n=0 plots data only -->
-<!-- testocsp <- condsimmer(dat=P1$dat,P1,tbp,n=0,show=TRUE,truedat=NULL,V=P1$V,west=1) #n=0 plots data only -->
-
-
-<!-- P <- getCountryAimParms('MWI') #MWI -->
-
-<!-- #check data -->
-<!-- testocsp <- condsimmer(dat=NULL,n=0,P,as.list(rowMeans(rngs)),show=TRUE,truedat=P$dat,V=P$V/1, -->
-<!--                        west=1,stoch=0,coarse = 1) #unconditioned against data -->
-
-<!-- #optimize -->
-<!-- mappar <- getMAP(P) -->
-
-<!-- testocsp <- condsimmer(dat=NULL,n=1,P,mappar$par,show=TRUE,truedat=P$dat,V=P$V/1, -->
-<!--                        west=1,stoch=0,coarse = 1) #unconditioned against data -->
-
-
-<!-- testmc <- runMCMC(mappar$par,P,NI=50*2)                     #todo -->
-
-
-<!-- ``` -->
+We will refer to this stage as the *parameter estimation problem*, and refer to the problem of conditionally simulating from the model given a value of $\theta$ sampled from a posterior as the *filtering problem*. These stages are combined to provide an overall uncertain estimate of trajectories, which can be thought of as averaging the uncertain trajectory estimates (conditional on the data) across a range of model parameters (conditional on the data).
