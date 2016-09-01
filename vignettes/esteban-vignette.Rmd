@@ -190,7 +190,7 @@ If the above command is run with the option `graph=TRUE` various pdf plot output
 
 ## Working with the model ##
 
-The main function for working with the model is `condsimmer`. The name is from CONditional SIMulator, but it can be used for various purposes. First let's work with a country that has prevalence survey data:
+The main function for working with the model is `condsimmer`. The name is from CONditional SIMulator, but it can be used for various purposes. First, let's work with a country that has prevalence survey data:
 
 ```{r, eval=TRUE}
 P <- getCountryAimParms('MWI')       #MWI = Malawi
@@ -206,51 +206,62 @@ testocsp <- condsimmer(dat=P$dat,n=0,P,tbp,show=TRUE,truedat=NULL,V=P$V,
 
 ```
 
-With `west=1` the WHO estimates are also plotted (red lines). N.B. WHO mortality shown is TB deaths in HIV-negative people only.
-
-
+With `west=1` the WHO estimates are also plotted (red lines). N.B. WHO mortality shown is TB deaths in HIV-negative people only whereas the model output includes mortality due to HIV-positive TB cases.
 
 
 ### Calibrating the model ###
 
-Time taken...
+N.B. Many of the following examples are relatively slow (a few minutes for this section, perhaps nearer 15 minutes for the MCMC stage in the next section). Where minutes are needed to run, I have warned by writing SLOW.
+
+To calibrate the TB model parameters by searching for the maximum a posteriori (MAP) value, one uses the following function (SLOW):
 
 ```{r, eval=TRUE}
 mappar <- getMAP(P)
 ```
 
-Then
+Then one can use `condsimmer` in deterministic mode to check the associated dynamics.
 
 ```{r, eval=TRUE,fig.width=7, fig.height=7,fig.pos="H"}
 testocsp <- condsimmer(dat=NULL,n=1,P,mappar$par,show=TRUE,truedat=P$dat,V=P$V,
                         west=1,stoch=0,coarse = 1) #n=1 deterministic version
 ```
 
-`truedat` is used to display data that has not been conditioned on.
+N.B. by using `truedat`, we see the supplied data without conditioning on it. It is important in deterministic mode that `dat=NULL` or a dimension mis-match error will occur. `truedat` can also differ from `dat` and be used for simulation studies.
 
 ### Parameter uncertainty for the model ###
+
+To generate a sample from the posterior around this MAP estimate, one uses an MCMC routine (V.SLOW):
 
 ```{r, eval=TRUE}
 testmc <- runMCMC(mappar$par,P)
 ```
-Then..
+
+This is a parallel adaptive MCMC routine that by default takes 200 steps with `NW=20` chains. To pick a thinned sample from after a burn in period, one can use the following utility function:
 
 ```{r, eval=TRUE}
-print(dim(testmc))
-print(!nrow(testmc)%%20)
-#mcsamp <- prepMCMC(testmc,nsamps=150,burnin=150,NW=20)
+mcsamp <- prepMCMC(testmc,nsamps=150,burnin=150)
 
 ```
 
-todo: pairs, then plot
+The uncertainty associated with the parameter uncertainty can be visualized by running the deterministic model for 100 parameter sets and graphing (moderately SLOW):
 
-Supplying a `data.frame` of parameters overrides `n` to be the number of runs.
+```{r, eval=TRUE,fig.width=7, fig.height=7,fig.pos="H"}
+testocsp <- condsimmer(dat=NULL,P,mcsamp[1:100,],show=TRUE,truedat=P$dat,V=P$V,
+                        west=1,stoch=0,coarse = 1) # deterministic version
+
+```
+
+N.B. Supplying a `data.frame` of parameters overrides `n` to be the number of runs.
 
 ### Conditioning output on the data ###
 
+One can also condition the stochastic version of the model on the observed data, across a range of sampled parameter values. The runs conditioned on the observations agree very precisely with the notification data, but are more uncertain away from data.
 
-todo
+```{r, eval=TRUE,fig.width=7, fig.height=7,fig.pos="H"}
+testocsp <- condsimmer(dat=P$dat,P,mcsamp[1:150,],show=TRUE,truedat=P$dat,V=P$V,
+                        west=1,stoch=1,coarse = 1) #conditioned
 
+```
 
 
 ## Other details ##
