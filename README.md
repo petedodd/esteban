@@ -11,7 +11,7 @@ The fortran random number generation routines are linked to R's random number st
 ## Acknowledgements ##
 
 * Particular thanks to TB MAC (http://www.tb-mac.org) and also to WHO for funding the development of this work.
-* Many thanks to Philippe Glaziou and Carel Pretorius for discussions informing the development of this work.
+* Many thanks to Philippe Glaziou, Carel Pretorius and Jeremy Oakley for discussions informing the development of this work (while accepting responsibility for all shortcomings).
 
 
 For any queries, feedback or bugs, please contact Pete Dodd: p.j.dodd+esteban@sheffield.ac.uk
