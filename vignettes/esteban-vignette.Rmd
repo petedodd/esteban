@@ -292,3 +292,8 @@ The posterior for the underlying model parameters $P(\theta | Y)$ is also of int
 $$P(Y|\theta) = \int \text{d}X. P(Y|X\theta)P(X|\theta). $$
 
 We will refer to this stage as the *parameter estimation problem*, and refer to the problem of conditionally simulating from the model given a value of $\theta$ sampled from a posterior as the *filtering problem*. These stages are combined to provide an overall uncertain estimate of trajectories, which can be thought of as averaging the uncertain trajectory estimates (conditional on the data) across a range of model parameters (conditional on the data).
+
+
+### Contact ###
+
+For any queries, feedback or bugs, please contact Pete Dodd: p.j.dodd+esteban@sheffield.ac.uk
