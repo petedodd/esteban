@@ -1,0 +1,21 @@
+Package: esteban
+Title: Mathematical Modelling and Inference Framework for Estimation of TB
+    Burden
+Version: 0.0.9
+Authors@R: person("Pete", "Dodd", "p.j.dodd@sheffield.ac.uk", role = c("aut", "cre"))
+Author: Pete Dodd [aut,cre]
+Maintainer: Pete Dodd <p.j.dodd@sheffield.ac.uk>
+Description: What the package does (one paragraph) TO BE COMPLETED! todo
+Depends:
+    R (>= 3.0.2)
+License: TO BE DETERMINED! Depends on what is used. todo. In meantime not for distribution.
+LazyData: false
+Imports:
+    ggplot2,
+    data.table,
+    scales,
+    reshape2,
+RoxygenNote: 5.0.1
+Suggests: knitr,
+    rmarkdown
+VignetteBuilder: knitr

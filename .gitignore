@@ -1,0 +1,15 @@
+**.Rproj.user
+**.Rhistory
+**.RData
+**.so
+**.o
+**.mod
+tmp/data/**
+tmp/graphs/**
+.DS_Store
+**.rda
+inst/doc
+**/figs/*.pdf
+**_cache/**
+**_files/**
+

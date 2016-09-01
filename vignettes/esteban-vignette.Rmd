@@ -1,0 +1,352 @@
+---
+title: '**esteban**: An experimental package for tuberculosis burden estimation'
+author: "P.J. Dodd"
+date: '`r Sys.Date()`'
+output: pdf_document
+urlcolor: blue
+vignette: |
+  %\VignetteIndexEntry{Vignette Title} %\VignetteEngine{knitr::rmarkdown} %\VignetteEncoding{UTF-8}
+---
+
+<!-- [//]:(pdf_document or  rmarkdown::html_vignette in output) -->
+<!-- [//]:(use build_vignettes() from devootls - I think this will actually include the vignette in the package) -->
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache=TRUE)
+```
+
+<!-- ### Abstract -->
+<!-- > This vignette illustrates progress on the `esteban` package, contains links and instructions for installation, and serves as an interim milestone. -->
+
+
+# Purpose
+
+This document is an embryonic vignette for the `esteban` R package, and also serves as an interim progress report for the TB MAC funded project to further develop the approach and software.
+
+The overall aims of the project are to
+
+- incorporate HIV/ART structure into the existing framework
+- make the model available as an R package
+- investigate alternative inference methodologies
+- investigate the relative informativeness of different data sources
+
+The interim deliverables are for an R package and vignette to be available, with example results. This document is the current package vignette, and the current package can be downloaded from the links in the Installation section below
+
+
+# Introduction
+
+Tuberculosis (TB) burden includes incidence, mortality and prevalence. Most often estimates of incidence are based on notification data (cases of TB detected and reported to authorities), inflated by a factor to reflect an imperfect case detection rate (CDR). Deaths due to TB may be coded with TB as the cause in vital registration (VR) systems, but as with notifications, VR data will differ from the true mortality due to TB. Well-conducted prevalence surveys provide an unbiased estimate of TB prevalence, but are expensive. Recently there has been a number of TB prevalence surveys undertaken, particularly in high-burden settings with imperfectly functioning detection/notification systems and imperfect or absent VR systems. Making estimates about one facet of burden from data on another relies on modelling assumptions on the relationships between then (e.g. case-fatality assumptions to relate incidence to mortality). The aim of this project is to develop a statistically rigorous transmission-modelling framework that allows for all the available data to be used to make statements about all aspects of burden.
+
+## Inference problem
+
+The inference problem can be formalised in a Bayesian setting with the following definitions:
+
+- $X$ the unobserved variables, in this case: TB incidence, mortality and prevalence
+- $Y$ the observed variables, in this case: TB notifications, TB vital registrations, and the result from a prevalence survey
+- $\theta$ underlying model parameters, in this case: parameters on TB natural history, transmission and detection
+- $\pi(\theta)$ a probability distribution quantifying prior beliefs about $\theta$
+
+We would like to develop a posterior distribution for the unobserved burden $X$ given observations $Y$
+
+$$P(X|Y) = \int \text{d}\theta. P(X|Y\theta)P(\theta|Y).$$
+
+The posterior for the underlying model parameters $P(\theta | Y)$ is also of interest an obtained by applying a Bayesian sampling scheme to the marginal likelihood
+
+$$P(Y|\theta) = \int \text{d}X. P(Y|X\theta)P(X|\theta). $$
+
+We will refer to this stage as the *parameter estimation problem*, and refer to the problem of conditionally simulating from the model given a value of $\theta$ sampled from a posterior as the *filtering problem*. These stages are combined to provide an overall uncertain estimate of trajectories, which can be thought of as averaging the uncertain trajectory estimates (conditional on the data) across a range of model parameters (conditional on the data).
+
+
+
+## Model structure
+
+The model is a stochastic age-, sex- and HIV/ART-structured transmission model. The demographic and HIV/ART structure are described in the next section. The model is stochastic because the number of each events occurring at each time step is a random variable, but also because of the priors for the case-detection and death-detection trajectories arise from stochastic processes. More specifically, the parameters specifying the probability a case incident at time $t$ is notified ($CDR_t$) and of a death at time $t$ appearing in the vital registration data ($VR_t$) are treated as random variables obeying a geometric Brownian motion, e.g.:
+
+$$ \log(CDR_{t+1}) = \log(CDR_t) + \text{d}CDR + \frac{\epsilon_t}{\theta} $$
+$$ \epsilon_t \sim N(0,1) $$
+
+### TB structure
+
+Figure 1 below gives an overview of how the TB model is organised: the red boxes represent observed quantities ($Y$ in the notation above), squares represent counts whereas diamonds represent rates. True mortality (2) shows up in the VR system (1); prevalent TB (5) resolves either in notification (4) or non-notification; the prevalent pool of TB (whether destined for notification or not) may be sampled in a prevalence survey (5); incidence arises from the underlying population state ($X_t$ here not to be confused with the notation for unobserved variables above), influenced by prevalence via the force-of-infection (7); and finally, the force-of-infection also influences the underlying population state at future times by changing the proportion of each category latently infected with the TB bacillus (9).
+
+Each disease state inherits the structure from the underlying population, which is described in the next section.
+
+![Overview model structure](figs/TBests3.pdf)
+
+\pagebreak
+
+### Demographic & HIV/ART structure
+
+Since many of the settings where this approach may be most useful (i.e. places where a prevalence survey has been undertaken) have TB epidemiology strongly influenced by HIV, it is important to include details of the HIV epidemic. UNAIDS estimates of HIV infection and ART coverage are carried out in countries using a model-based analysis using the EPP and AIM models, developed and maintained by Avenir Health. Both because these models include natural histories supported by analyses of large HIV cohorts, and because we would like our underlying HIV epidemiology to be as close to the UNAIDS estimates as possible, we re-implemented a simplified version of Avenir's AIM model to account for underlying demography and HIV/ART epidemiology.
+
+This means that there are 81 age categories, 8 HIV infection states (uninfected, and then 7 CD4 cell count categories), 4 ART treatment categories (none, 0-6 months, 7-12 months >12 months), and 2 sexes, for a total of 5,184 states. The time-step used is 0.1 years, and the model is typically run over 45 years to start before the HIV epidemic. The Avenir/UNAIDS HIV prevalence and ART coverage data are used as inputs to achieve the overall levels of infection in the model, and the mortality by sex, age, CD4 cell count and HIV/ART status is then applied together with birth rates from UN Population Division.
+
+### Implementation
+
+The underlying model is implemented in Fortran 90 for speed and wrapped in the form of a package for the R statistical computing language/environment. R random number streams are used, but a separate library for onward random deviate generation has been written: setting R seeds will fix behaviour on a machine; but results may be platform-dependent.
+
+# Installation and use
+
+## Installation
+
+A user must first install an up-to-date version of R.
+
+The model dependencies should be installed first by typing
+
+```{r,eval=FALSE}
+deps <- c('ggplot2','data.table','scales') #needed
+pkgs <- installed.packages()[,"Package"] #got
+if(!all(deps %in% pkgs)) install.packages(deps[!(deps %in% pkgs)]) #add
+```
+
+at the R command prompt (or copy-pasting this code).
+
+The R package is currently available in binary form from these hyperlinks: [Windows](https://drive.google.com/file/d/0B1D72Lz_kk3oR1o2TjlxSTZIS2c), [Linux](https://drive.google.com/file/d/0B1D72Lz_kk3oeGN5Tkw2MW8zWjA), [Mac OS X (<10.8)](https://drive.google.com/file/d/0B1D72Lz_kk3oQ3RkMnh0eUJGdkE). These files are either zip, tar.gz or tgz files and can be installed by typing
+
+```{r,eval=FALSE}
+install.packages('esteban_xxx.zip',repos=NULL)
+```
+
+from the same working directory as the package file. Here, the file name should be altered to match the version downloaded. Alternatively, most R GUIs include a menu-driven method to install packages from a file.
+
+
+
+&nbsp;
+
+## Use
+
+In order to execute the examples below, the following packages will need to be loaded:
+
+```{r, eval=TRUE}
+library(esteban) # this package
+library(ggplot2) # for some plots exx below
+library(reshape2) # for reshaping data below
+```
+
+Once the functions included and their names/details are finalised, help will be available by typing `?function_name` at the R command prompt. Similarly, the finalized vignette will be bundled with the package and can be opened from the R command line.
+
+
+# The example of South Africa
+
+## Running the model
+
+Various forms of data are included with the package:
+
+- UN Population division demographic data
+- Life-tables by country, sex, age, year
+- Birth and migration rates by time and country
+- UNAIDS HIV prevalence and ART coverage estimates
+- data on HIV/ART related survival and progression by CD4 county, age, sex, and region from Avenir's AIM model
+
+To look up and prepare data for a specific country to use in the model (specified by the 3 letter ISO code), you can call
+
+```{r, eval=TRUE}
+P <- getCountryAimParms('ZAF')       #South Africa = ZAF
+```
+which also carries out some one-off pre-computations and reshaping of data for model use. The object `P` then contains all the non-TB parameters relevant to South Africa
+and its demography and patterns of HIV/ART.
+
+The model also requires a list of parameters relevant to TB:
+
+
+```{r, eval=TRUE}
+tbp <- list(
+  foi = 1e-2,                          #initial foi - parametrizes intiial state
+  bet = 5,                             #transmission coefficient
+  v = .2,                              #protection (0=complete protection)
+  pr=.1,                               #primary progression (probability)
+  eps = 5e-3,                          #endogenous activation (rate per year)
+  cdr0 = .5,                           #initial CDR (really probability of detection)
+  dcdr = .05,                          #drift in CDR (per year)
+  theta = 10e0,                        #precision for noise in CDR (random walk w/ drift)
+  CFRu = .5,                           #untreated CFR (really probability)
+  CFRd = .05,                          #treated CFR
+  TSu = 3,                             #duration untreated
+  TSd = .5,                            #duration treated
+  VR = .7                              #initial VR CDR (probability of death being in VR)
+)
+
+```
+
+To set the random number behaviour, we can set R's random number seed:
+
+```{r,eval=TRUE}
+set.seed(1234)
+```
+
+To run the model one types
+```{r, eval=TRUE}
+test <- AimDynFLD(P,tbp,stoch=TRUE,coarse = TRUE,graph=FALSE) #stochastic version
+```
+which should take about 0.2s. The `stoch` option sets the TB model to use the stochastic version. The `coarse` option should normally be used, and uses a longer time-step for the TB model than for the underlying demographic model. Running the model with `coarse=FALSE` uses the 0.1 year time-step and takes much longer to run as tens of thousands of random numbers are needed for each iteration due to the large dimension of the population state space.
+
+## Diagnostic demographic/HIV output graphs
+
+If the above command is run with the option `graph=TRUE` various pdf plot outputs will be saved to the working directory as checks that the demographic model is working well. These include the following graphs (Figures 2-7):
+
+
+![South Africa: total population. Red line model; black dots UNPD data.](figs/ZAFchk_totpop.pdf)
+
+![South Africa: demographic snapshot in 2014. Fine pyramid model output; black lines UNDP 5-year demographic snapshot.](figs/ZAFchk_demog.pdf)
+
+![South Africa: HIV prevalence by time. Red line model; black dots AIM data.](figs/ZAFchk_hivp.pdf)
+
+![South Africa: HIV prevalence by age.](figs/ZAFchk_agehiv.pdf)
+
+![South Africa: ART coverage by time. Red line model; black dots UNAIDS data.](figs/ZAFchk_artp.pdf)
+
+![South Africa: CD4 and ART status by age.](figs/ZAFchk_agecd4.pdf)
+
+
+<!-- [//]:(![optional caption text](figs/ZAFchk_ageLTBIdemo.png)) -->
+<!-- [//]:(![optional caption text](figs/ZAF_tbchk_ARI.png)) -->
+<!-- [//]:(![optional caption text](figs/ZAF_tbchk_TBI.png)) -->
+<!-- [//]:(![optional caption text](figs/ZAF_tbchk_TBM.png)) -->
+<!-- [//]:(![optional caption text](figs/ZAF_tbchk_TBN.png)) -->
+<!-- [//]:(![optional caption text](figs/ZAF_tbchk_TBP.png)) -->
+<!-- [//]:(![optional caption text](figs/ZAFtbchk_TBPage.png)) -->
+
+
+\pagebreak
+
+## Examining some TB model output
+
+The object `test` contains a snapshot of the population at the final time, and a set of time-series records.
+
+We can examine some of the model time-series output (see Figure 8).
+
+```{r, eval=TRUE,fig.width=7, fig.height=7,fig.pos="H",fig.cap="A single model realisation"}
+dat0 <- test$rec
+testm <- melt(dat0[,c('t','prev','TBI','deaths','dreg','notes')],id='t')
+ggplot(data=testm,aes(t,value)) + geom_line()  + facet_wrap(~variable,scales = 'free_y')
+```
+
+## The filtering problem
+
+As described above, one part of the estimation procedure is to simulate from the model conditional on the observed data. The current package achieves this using an Ensemble Kalman Filter (EnKF). To illustrate its use, let us make a new dataset `dat1`:
+
+
+```{r, eval=TRUE}
+## dat1 omits all but one prevalence point
+dat1 <- dat0
+dat1$prev <- NA
+dat1$prev[30] <- dat0$prev[30]
+```
+This means that `dat0` contains the underlying true data for the model, but `dat1` has had all prevalence data but one removed (which is here treated as a perfectly precise measurement). In the final version, posterior uncertainty in the model parameters will be represented by a sample from a MCMC routine. Here, without conditioning, we consider small perturbations around the parameters used to generate this realisation of output data:
+
+
+```{r, eval=TRUE}
+TBPZ <- as.data.frame(tbp)              #original parms
+TBPZ <- TBPZ[rep(1,150),]               #150x
+TBPZ <- TBPZ*(1+.05*(runif(prod(dim(TBPZ)))-.5)) #wobble
+```
+Large perturbations in these parameters which are not conditioned on the data will result in simulations very far from the data, and this is likely to generate instability when the EnKF is applied. By specifying a sample of size 150 we are using 150 model runs to generate a set of simulations (run time $\sim$ 30s) conditional on the notifications (`notes`), vital registrations (`dreg`) and a single prevalence point (`prev`). With the option `show=TRUE`, a graph is produced (Figure 9).
+
+```{r, eval=TRUE,fig.width=7, fig.height=7,fig.pos="H",fig.cap="Conditional simuation given notification, VR  and prevalence data at one time (blue)"}
+testnew <- condsimmer(dat=dat1,P,TBPZ,show=TRUE,truedat=dat0)
+```
+
+<!-- &nbsp; -->
+
+Since the simulations are (approximately) conditioned on `notes`, `dreg`, and the value of `prev` at time 30 (blue square), the simulations run almost on top of the true data (red) for these quantities with little variation. The predictions given this data for TB incidence `TBI`, TB deaths `deaths` and prevalence away from data are imperfect but close to the truth (red points).
+
+In addition to returning the graph, the `testnew` object contains the underlying data in long-form.
+
+To illustrate this conditional simulation applied to a different simulated dataset, we can repeat these steps, obtaining Figure 10.
+
+```{r, echo=FALSE, eval=TRUE,fig.width=7, fig.height=7,fig.pos="H",fig.cap="Conditional simuation given different notification, VR  and prevalence data at one time (blue)"}
+test <- AimDynFLD(P,tbp,stoch=TRUE,coarse = TRUE,graph=FALSE) #stochastic version
+dat0 <- test$rec
+dat1 <- dat0
+dat1$prev <- NA
+dat1$prev[30] <- dat0$prev[30]
+TBPZ <- as.data.frame(tbp)              #original parms
+TBPZ <- TBPZ[rep(1,150),]               #150x
+TBPZ <- TBPZ*(1+.05*(runif(prod(dim(TBPZ)))-.5)) #wobble
+testnew <- condsimmer(dat=dat1,P,TBPZ,show=TRUE,truedat=dat0)
+```
+
+
+
+## The parameter estimation problem
+
+The approach taken to the parameter estimation is to use a deterministic approximation to the dynamics of the mean and variances, and compute the marginal likelihood in a Gaussian approximation. This means that (under this approximation) the integration marginal likelihood can be computed in closed form and only a single model run is needed to compute the marginal likelihood in a sampling routine. Currently, the approximation for the mean quantities is working, but the approximation for the variance dynamics needs further analysis. We also intend to include computation of the gradient of the likelihood, to facilitate efficient determination of the maximum *a posteriori* parameter estimate and enable use of Hamiltonian Monte Carlo routines for inference.
+
+
+# Next steps
+
+The next steps on this project are:
+
+- improvement of variance approximations and inclusion of gradient computations
+- inclusion of parameter estimation routines to represent parameter uncertainty
+- inclusion of HIV/TB parameters on top to change progression rates/durations dependent on HIV-status
+- application to real data once simulation study is completed
+
+Known bugs:
+
+- notch in ART start data from AIM
+- currently won't gracefully handle fetching parameters for countries not appearing in HIV databases (typically those with low HIV prevalence)
+
+If you find other bugs, please contact me at: [p.j.dodd@sheffield.ac.uk](mailto:p.j.dodd@sheffield.ac.uk)
+
+
+#New examples
+
+```{r}
+P <- getCountryAimParms('NGA')
+dump <- AimDynFLD(P,tbp,stoch=FALSE,coarse = FALSE,graph=TRUE)
+
+## === running the model
+#test <- AimDynFLD(P,tbp,stoch=FALSE,graph=TRUE) #deterministic version, with check graphs
+test <- AimDynFLD(P1,tbp,stoch=TRUE,coarse = TRUE,graph=FALSE) #stochastic version, using coarse time-step for TB
+testd <- AimDynFLD(P,tbp,stoch=FALSE,coarse = FALSE,graph=FALSE) #deterministic version
+test$rec$prev <- test$rec$DD + test$rec$DU #total prevalence = to-be-detected + to-be-undetected
+test$rec$t <- 1:nrow(test$rec)             #time
+
+#ggplot(data=test$rec,aes(t,prev)) + geom_point()   #true prevalence
+
+## dat0 is a data set with true quantities
+dat0 <- test$rec
+dat0$t <- 1:nrow(dat0) + P1$syear -1
+
+## dat1 omits all but one prevalence point
+dat1 <- dat0
+dat1$prev100k <- NA
+dat1$prev100k[30] <- dat0$prev100k[30]
+dat1$dreg <- NA
+dat1$dreg[40:42] <- dat0$dreg[40:42]
+dat1$notes[1:20] <- NA
+
+## add in a replicate variable for plotting against simulation of several runs below
+dat1$replicate <- dat0$replicate <- 0
+
+
+testocsp <- condsimmer(dat=dat1,P1,tbp,n=0,show=TRUE,truedat=dat0,V=(dat1$prev100k/10),west=1) #n=0 plots data only
+testocsp <- condsimmer(dat=NULL,P1,tbp,n=50,show=TRUE,truedat=dat0,V=(dat1$prev100k/10),west=1) #no conditioning, more vars
+
+testocsp <- condsimmer(dat=dat1,P1,tbp,n=50,show=TRUE,truedat=dat0,V=(dat1$prev100k/10),west=1)
+
+P <- getCountryAimParms('MWI') #MWI
+P1 <- getCountryAimParms('CHN') #MWI
+#ndat<- getCountryTBData(P1)
+##testocsp <- condsimmer(dat=ndat$dat,P1,tbp,n=0,show=TRUE,truedat=dat0,V=ndat$V,west=1) #n=0 plots data only
+testocsp <- condsimmer(dat=P1$dat,P1,tbp,n=0,show=TRUE,truedat=NULL,V=P1$V,west=1) #n=0 plots data only
+
+
+P <- getCountryAimParms('MWI') #MWI
+
+#check data
+testocsp <- condsimmer(dat=NULL,n=0,P,as.list(rowMeans(rngs)),show=TRUE,truedat=P$dat,V=P$V/1,
+                       west=1,stoch=0,coarse = 1) #unconditioned against data
+
+#optimize
+mappar <- getMAP(P)
+
+testocsp <- condsimmer(dat=NULL,n=1,P,mappar$par,show=TRUE,truedat=P$dat,V=P$V/1,
+                       west=1,stoch=0,coarse = 1) #unconditioned against data
+
+
+testmc <- runMCMC(mappar$par,P,NI=50*2)                     #todo
+
+
+```
