@@ -1,4 +1,4 @@
-##' A function for running the AIM dynamics with infection (fortran version)
+##' A function for running the AIM HIV/demo dynamics with TB dynamics added
 ##'
 ##' Content to be written
 ##' @title AIM dynamics with LTBI and deterministic approximation

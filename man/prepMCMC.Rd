@@ -2,6 +2,7 @@
 % Please edit documentation in R/utilities.R
 \name{prepMCMC}
 \alias{prepMCMC}
+\title{prepMCMC - post-process MCMC data from runMCMC}
 \usage{
 prepMCMC(X, nsamps = 150, burnin = 150, NW = 20)
 }
@@ -14,11 +15,14 @@ prepMCMC(X, nsamps = 150, burnin = 150, NW = 20)
 
 \item{NW}{}
 }
+\value{
+a data.frame of sampled parameters
+}
 \description{
-.. content for \description{} (no empty lines) ..
+A function to generate parameter sample from MCMC data
 }
 \details{
-.. content for \details{} ..
+content to be written
 }
 \author{
 Pete Dodd

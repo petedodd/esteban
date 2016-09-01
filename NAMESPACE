@@ -3,6 +3,7 @@
 export(AimDynFLD)
 export(condsimmer)
 export(getCountryAimParms)
+export(getMAP)
 export(prepMCMC)
 export(runMCMC)
 import(data.table)

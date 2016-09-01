@@ -2,12 +2,27 @@
 % Please edit documentation in R/condsimmer.R
 \name{condsimmer}
 \alias{condsimmer}
-\title{condsimmer - conditional simulation NB needs the same col order in parms as used in ...TODO!}
+\title{condsimmer - (un)conditional simulation and graphing}
 \usage{
 condsimmer(dat = NULL, PL, tbpl, n = 150, quants = c("TBI", "deaths",
   "prev", "prev100k"), obs = c("notes", "dreg", "prev100k"), V = 0,
   show = FALSE, truedat = NULL, fname = NULL, stoch = TRUE,
   coarse = TRUE, west = FALSE)
+}
+\arguments{
+\item{dat}{- data to condition to (as in the dat slot of country parameters); NULL if no conditioning}
+
+\item{PL}{- country parameters as built by getCountryAimParms}
+
+\item{tbpl}{- a list of model parameters}
+
+\item{n}{- the number of simulations; overwritten by nrow(tbpl) if this is a data.frame}
+
+\item{quants}{- the unobserved quantities of interest}
+
+\item{obs}{- the observed quanttities}
+
+\item{V}{- the s.d. of prevalence observations}
 }
 \value{
 X a long-form data frame of observed and unobserved quantities

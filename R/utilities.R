@@ -76,6 +76,14 @@ LLfun <- function(x,LLP,iset=1:nrow(rngs)){
     ans
 }
 
+##' Calibrate model parameters
+##'
+##' content to be written
+##' @title getMAP - optimize to find point (MAP) estimate for model
+##' @param LLP 
+##' @return list(par,value) with par a list of parameters and value log-posterior
+##' @author Pete Dodd
+##' @export
 getMAP <- function(LLP){
     infvar <- rownames(rngs)[c(1:7,9:15)]
     x0 <- rowMeans(rngs[infvar,])
@@ -94,16 +102,16 @@ getMAP <- function(LLP){
     list(par=tbpo,value=sola$value)
 }
 
-##' .. content for \description{} (no empty lines) ..
+##' Markov-chain Monte Carlo model parameter inference
 ##'
-##' .. content for \details{} ..
-##' @title 
+##' content to be written
+##' @title runMCMC - run MCMC approach to parameter inference
 ##' @param tbp 
 ##' @param LLP 
 ##' @param NI 
 ##' @param NW 
 ##' @param previous 
-##' @return 
+##' @return data.frame of multiple MCMC chains 
 ##' @author Pete Dodd
 ##' @export
 runMCMC <- function(tbp,LLP,NI=200,NW=20,previous=NULL){
@@ -132,15 +140,16 @@ runMCMC <- function(tbp,LLP,NI=200,NW=20,previous=NULL){
     colnames(coldat) <- row.names(rngs)[iss]
     as.data.frame(coldat)
 }
-##' .. content for \description{} (no empty lines) ..
+
+##' A function to generate parameter sample from MCMC data 
 ##'
-##' .. content for \details{} ..
-##' @title 
+##' content to be written 
+##' @title prepMCMC - post-process MCMC data from runMCMC
 ##' @param X 
 ##' @param nsamps 
 ##' @param burnin 
 ##' @param NW 
-##' @return 
+##' @return a data.frame of sampled parameters
 ##' @author Pete Dodd
 ##' @export
 prepMCMC <- function(X,nsamps=150,burnin=150,NW=20){

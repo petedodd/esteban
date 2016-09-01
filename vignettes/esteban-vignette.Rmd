@@ -2,7 +2,7 @@
 title: '**esteban**: An experimental package for tuberculosis burden estimation'
 author: "P.J. Dodd"
 date: '`r Sys.Date()`'
-output: pdf_document
+output: html_vignette
 urlcolor: blue
 vignette: |
   %\VignetteIndexEntry{Vignette Title} %\VignetteEngine{knitr::rmarkdown} %\VignetteEncoding{UTF-8}
@@ -71,7 +71,7 @@ Figure 1 below gives an overview of how the TB model is organised: the red boxes
 
 Each disease state inherits the structure from the underlying population, which is described in the next section.
 
-![Overview model structure](figs/TBests3.pdf)
+![Overview model structure](figs/TBests3.png)
 
 \pagebreak
 
@@ -185,17 +185,17 @@ which should take about 0.2s. The `stoch` option sets the TB model to use the st
 If the above command is run with the option `graph=TRUE` various pdf plot outputs will be saved to the working directory as checks that the demographic model is working well. These include the following graphs (Figures 2-7):
 
 
-![South Africa: total population. Red line model; black dots UNPD data.](figs/ZAFchk_totpop.pdf)
+![South Africa: total population. Red line model; black dots UNPD data.](figs/ZAFchk_totpop.png)
 
-![South Africa: demographic snapshot in 2014. Fine pyramid model output; black lines UNDP 5-year demographic snapshot.](figs/ZAFchk_demog.pdf)
+![South Africa: demographic snapshot in 2014. Fine pyramid model output; black lines UNDP 5-year demographic snapshot.](figs/ZAFchk_demog.png)
 
-![South Africa: HIV prevalence by time. Red line model; black dots AIM data.](figs/ZAFchk_hivp.pdf)
+![South Africa: HIV prevalence by time. Red line model; black dots AIM data.](figs/ZAFchk_hivp.png)
 
-![South Africa: HIV prevalence by age.](figs/ZAFchk_agehiv.pdf)
+![South Africa: HIV prevalence by age.](figs/ZAFchk_agehiv.png)
 
-![South Africa: ART coverage by time. Red line model; black dots UNAIDS data.](figs/ZAFchk_artp.pdf)
+![South Africa: ART coverage by time. Red line model; black dots UNAIDS data.](figs/ZAFchk_artp.png)
 
-![South Africa: CD4 and ART status by age.](figs/ZAFchk_agecd4.pdf)
+![South Africa: CD4 and ART status by age.](figs/ZAFchk_agecd4.png)
 
 
 <!-- [//]:(![optional caption text](figs/ZAFchk_ageLTBIdemo.png)) -->
@@ -209,144 +209,144 @@ If the above command is run with the option `graph=TRUE` various pdf plot output
 
 \pagebreak
 
-## Examining some TB model output
+<!-- ## Examining some TB model output -->
 
-The object `test` contains a snapshot of the population at the final time, and a set of time-series records.
+<!-- The object `test` contains a snapshot of the population at the final time, and a set of time-series records. -->
 
-We can examine some of the model time-series output (see Figure 8).
+<!-- We can examine some of the model time-series output (see Figure 8). -->
 
-```{r, eval=TRUE,fig.width=7, fig.height=7,fig.pos="H",fig.cap="A single model realisation"}
-dat0 <- test$rec
-testm <- melt(dat0[,c('t','prev','TBI','deaths','dreg','notes')],id='t')
-ggplot(data=testm,aes(t,value)) + geom_line()  + facet_wrap(~variable,scales = 'free_y')
-```
+<!-- ```{r, eval=TRUE,fig.width=7, fig.height=7,fig.pos="H",fig.cap="A single model realisation"} -->
+<!-- dat0 <- test$rec -->
+<!-- testm <- melt(dat0[,c('t','prev','TBI','deaths','dreg','notes')],id='t') -->
+<!-- ggplot(data=testm,aes(t,value)) + geom_line()  + facet_wrap(~variable,scales = 'free_y') -->
+<!-- ``` -->
 
-## The filtering problem
+<!-- ## The filtering problem -->
 
-As described above, one part of the estimation procedure is to simulate from the model conditional on the observed data. The current package achieves this using an Ensemble Kalman Filter (EnKF). To illustrate its use, let us make a new dataset `dat1`:
-
-
-```{r, eval=TRUE}
-## dat1 omits all but one prevalence point
-dat1 <- dat0
-dat1$prev <- NA
-dat1$prev[30] <- dat0$prev[30]
-```
-This means that `dat0` contains the underlying true data for the model, but `dat1` has had all prevalence data but one removed (which is here treated as a perfectly precise measurement). In the final version, posterior uncertainty in the model parameters will be represented by a sample from a MCMC routine. Here, without conditioning, we consider small perturbations around the parameters used to generate this realisation of output data:
+<!-- As described above, one part of the estimation procedure is to simulate from the model conditional on the observed data. The current package achieves this using an Ensemble Kalman Filter (EnKF). To illustrate its use, let us make a new dataset `dat1`: -->
 
 
-```{r, eval=TRUE}
-TBPZ <- as.data.frame(tbp)              #original parms
-TBPZ <- TBPZ[rep(1,150),]               #150x
-TBPZ <- TBPZ*(1+.05*(runif(prod(dim(TBPZ)))-.5)) #wobble
-```
-Large perturbations in these parameters which are not conditioned on the data will result in simulations very far from the data, and this is likely to generate instability when the EnKF is applied. By specifying a sample of size 150 we are using 150 model runs to generate a set of simulations (run time $\sim$ 30s) conditional on the notifications (`notes`), vital registrations (`dreg`) and a single prevalence point (`prev`). With the option `show=TRUE`, a graph is produced (Figure 9).
-
-```{r, eval=TRUE,fig.width=7, fig.height=7,fig.pos="H",fig.cap="Conditional simuation given notification, VR  and prevalence data at one time (blue)"}
-testnew <- condsimmer(dat=dat1,P,TBPZ,show=TRUE,truedat=dat0)
-```
-
-<!-- &nbsp; -->
-
-Since the simulations are (approximately) conditioned on `notes`, `dreg`, and the value of `prev` at time 30 (blue square), the simulations run almost on top of the true data (red) for these quantities with little variation. The predictions given this data for TB incidence `TBI`, TB deaths `deaths` and prevalence away from data are imperfect but close to the truth (red points).
-
-In addition to returning the graph, the `testnew` object contains the underlying data in long-form.
-
-To illustrate this conditional simulation applied to a different simulated dataset, we can repeat these steps, obtaining Figure 10.
-
-```{r, echo=FALSE, eval=TRUE,fig.width=7, fig.height=7,fig.pos="H",fig.cap="Conditional simuation given different notification, VR  and prevalence data at one time (blue)"}
-test <- AimDynFLD(P,tbp,stoch=TRUE,coarse = TRUE,graph=FALSE) #stochastic version
-dat0 <- test$rec
-dat1 <- dat0
-dat1$prev <- NA
-dat1$prev[30] <- dat0$prev[30]
-TBPZ <- as.data.frame(tbp)              #original parms
-TBPZ <- TBPZ[rep(1,150),]               #150x
-TBPZ <- TBPZ*(1+.05*(runif(prod(dim(TBPZ)))-.5)) #wobble
-testnew <- condsimmer(dat=dat1,P,TBPZ,show=TRUE,truedat=dat0)
-```
+<!-- ```{r, eval=TRUE} -->
+<!-- ## dat1 omits all but one prevalence point -->
+<!-- dat1 <- dat0 -->
+<!-- dat1$prev <- NA -->
+<!-- dat1$prev[30] <- dat0$prev[30] -->
+<!-- ``` -->
+<!-- This means that `dat0` contains the underlying true data for the model, but `dat1` has had all prevalence data but one removed (which is here treated as a perfectly precise measurement). In the final version, posterior uncertainty in the model parameters will be represented by a sample from a MCMC routine. Here, without conditioning, we consider small perturbations around the parameters used to generate this realisation of output data: -->
 
 
+<!-- ```{r, eval=TRUE} -->
+<!-- TBPZ <- as.data.frame(tbp)              #original parms -->
+<!-- TBPZ <- TBPZ[rep(1,150),]               #150x -->
+<!-- TBPZ <- TBPZ*(1+.05*(runif(prod(dim(TBPZ)))-.5)) #wobble -->
+<!-- ``` -->
+<!-- Large perturbations in these parameters which are not conditioned on the data will result in simulations very far from the data, and this is likely to generate instability when the EnKF is applied. By specifying a sample of size 150 we are using 150 model runs to generate a set of simulations (run time $\sim$ 30s) conditional on the notifications (`notes`), vital registrations (`dreg`) and a single prevalence point (`prev`). With the option `show=TRUE`, a graph is produced (Figure 9). -->
 
-## The parameter estimation problem
+<!-- ```{r, eval=TRUE,fig.width=7, fig.height=7,fig.pos="H",fig.cap="Conditional simuation given notification, VR  and prevalence data at one time (blue)"} -->
+<!-- testnew <- condsimmer(dat=dat1,P,TBPZ,show=TRUE,truedat=dat0) -->
+<!-- ``` -->
 
-The approach taken to the parameter estimation is to use a deterministic approximation to the dynamics of the mean and variances, and compute the marginal likelihood in a Gaussian approximation. This means that (under this approximation) the integration marginal likelihood can be computed in closed form and only a single model run is needed to compute the marginal likelihood in a sampling routine. Currently, the approximation for the mean quantities is working, but the approximation for the variance dynamics needs further analysis. We also intend to include computation of the gradient of the likelihood, to facilitate efficient determination of the maximum *a posteriori* parameter estimate and enable use of Hamiltonian Monte Carlo routines for inference.
+<!-- <\!-- &nbsp; -\-> -->
 
+<!-- Since the simulations are (approximately) conditioned on `notes`, `dreg`, and the value of `prev` at time 30 (blue square), the simulations run almost on top of the true data (red) for these quantities with little variation. The predictions given this data for TB incidence `TBI`, TB deaths `deaths` and prevalence away from data are imperfect but close to the truth (red points). -->
 
-# Next steps
+<!-- In addition to returning the graph, the `testnew` object contains the underlying data in long-form. -->
 
-The next steps on this project are:
+<!-- To illustrate this conditional simulation applied to a different simulated dataset, we can repeat these steps, obtaining Figure 10. -->
 
-- improvement of variance approximations and inclusion of gradient computations
-- inclusion of parameter estimation routines to represent parameter uncertainty
-- inclusion of HIV/TB parameters on top to change progression rates/durations dependent on HIV-status
-- application to real data once simulation study is completed
-
-Known bugs:
-
-- notch in ART start data from AIM
-- currently won't gracefully handle fetching parameters for countries not appearing in HIV databases (typically those with low HIV prevalence)
-
-If you find other bugs, please contact me at: [p.j.dodd@sheffield.ac.uk](mailto:p.j.dodd@sheffield.ac.uk)
-
-
-#New examples
-
-```{r}
-P <- getCountryAimParms('NGA')
-dump <- AimDynFLD(P,tbp,stoch=FALSE,coarse = FALSE,graph=TRUE)
-
-## === running the model
-#test <- AimDynFLD(P,tbp,stoch=FALSE,graph=TRUE) #deterministic version, with check graphs
-test <- AimDynFLD(P1,tbp,stoch=TRUE,coarse = TRUE,graph=FALSE) #stochastic version, using coarse time-step for TB
-testd <- AimDynFLD(P,tbp,stoch=FALSE,coarse = FALSE,graph=FALSE) #deterministic version
-test$rec$prev <- test$rec$DD + test$rec$DU #total prevalence = to-be-detected + to-be-undetected
-test$rec$t <- 1:nrow(test$rec)             #time
-
-#ggplot(data=test$rec,aes(t,prev)) + geom_point()   #true prevalence
-
-## dat0 is a data set with true quantities
-dat0 <- test$rec
-dat0$t <- 1:nrow(dat0) + P1$syear -1
-
-## dat1 omits all but one prevalence point
-dat1 <- dat0
-dat1$prev100k <- NA
-dat1$prev100k[30] <- dat0$prev100k[30]
-dat1$dreg <- NA
-dat1$dreg[40:42] <- dat0$dreg[40:42]
-dat1$notes[1:20] <- NA
-
-## add in a replicate variable for plotting against simulation of several runs below
-dat1$replicate <- dat0$replicate <- 0
+<!-- ```{r, echo=FALSE, eval=TRUE,fig.width=7, fig.height=7,fig.pos="H",fig.cap="Conditional simuation given different notification, VR  and prevalence data at one time (blue)"} -->
+<!-- test <- AimDynFLD(P,tbp,stoch=TRUE,coarse = TRUE,graph=FALSE) #stochastic version -->
+<!-- dat0 <- test$rec -->
+<!-- dat1 <- dat0 -->
+<!-- dat1$prev <- NA -->
+<!-- dat1$prev[30] <- dat0$prev[30] -->
+<!-- TBPZ <- as.data.frame(tbp)              #original parms -->
+<!-- TBPZ <- TBPZ[rep(1,150),]               #150x -->
+<!-- TBPZ <- TBPZ*(1+.05*(runif(prod(dim(TBPZ)))-.5)) #wobble -->
+<!-- testnew <- condsimmer(dat=dat1,P,TBPZ,show=TRUE,truedat=dat0) -->
+<!-- ``` -->
 
 
-testocsp <- condsimmer(dat=dat1,P1,tbp,n=0,show=TRUE,truedat=dat0,V=(dat1$prev100k/10),west=1) #n=0 plots data only
-testocsp <- condsimmer(dat=NULL,P1,tbp,n=50,show=TRUE,truedat=dat0,V=(dat1$prev100k/10),west=1) #no conditioning, more vars
 
-testocsp <- condsimmer(dat=dat1,P1,tbp,n=50,show=TRUE,truedat=dat0,V=(dat1$prev100k/10),west=1)
+<!-- ## The parameter estimation problem -->
 
-P <- getCountryAimParms('MWI') #MWI
-P1 <- getCountryAimParms('CHN') #MWI
-#ndat<- getCountryTBData(P1)
-##testocsp <- condsimmer(dat=ndat$dat,P1,tbp,n=0,show=TRUE,truedat=dat0,V=ndat$V,west=1) #n=0 plots data only
-testocsp <- condsimmer(dat=P1$dat,P1,tbp,n=0,show=TRUE,truedat=NULL,V=P1$V,west=1) #n=0 plots data only
+<!-- The approach taken to the parameter estimation is to use a deterministic approximation to the dynamics of the mean and variances, and compute the marginal likelihood in a Gaussian approximation. This means that (under this approximation) the integration marginal likelihood can be computed in closed form and only a single model run is needed to compute the marginal likelihood in a sampling routine. Currently, the approximation for the mean quantities is working, but the approximation for the variance dynamics needs further analysis. We also intend to include computation of the gradient of the likelihood, to facilitate efficient determination of the maximum *a posteriori* parameter estimate and enable use of Hamiltonian Monte Carlo routines for inference. -->
 
 
-P <- getCountryAimParms('MWI') #MWI
+<!-- # Next steps -->
 
-#check data
-testocsp <- condsimmer(dat=NULL,n=0,P,as.list(rowMeans(rngs)),show=TRUE,truedat=P$dat,V=P$V/1,
-                       west=1,stoch=0,coarse = 1) #unconditioned against data
+<!-- The next steps on this project are: -->
 
-#optimize
-mappar <- getMAP(P)
+<!-- - improvement of variance approximations and inclusion of gradient computations -->
+<!-- - inclusion of parameter estimation routines to represent parameter uncertainty -->
+<!-- - inclusion of HIV/TB parameters on top to change progression rates/durations dependent on HIV-status -->
+<!-- - application to real data once simulation study is completed -->
 
-testocsp <- condsimmer(dat=NULL,n=1,P,mappar$par,show=TRUE,truedat=P$dat,V=P$V/1,
-                       west=1,stoch=0,coarse = 1) #unconditioned against data
+<!-- Known bugs: -->
+
+<!-- - notch in ART start data from AIM -->
+<!-- - currently won't gracefully handle fetching parameters for countries not appearing in HIV databases (typically those with low HIV prevalence) -->
+
+<!-- If you find other bugs, please contact me at: [p.j.dodd@sheffield.ac.uk](mailto:p.j.dodd@sheffield.ac.uk) -->
 
 
-testmc <- runMCMC(mappar$par,P,NI=50*2)                     #todo
+<!-- #New examples -->
+
+<!-- ```{r} -->
+<!-- P <- getCountryAimParms('NGA') -->
+<!-- dump <- AimDynFLD(P,tbp,stoch=FALSE,coarse = FALSE,graph=TRUE) -->
+
+<!-- ## === running the model -->
+<!-- #test <- AimDynFLD(P,tbp,stoch=FALSE,graph=TRUE) #deterministic version, with check graphs -->
+<!-- test <- AimDynFLD(P1,tbp,stoch=TRUE,coarse = TRUE,graph=FALSE) #stochastic version, using coarse time-step for TB -->
+<!-- testd <- AimDynFLD(P,tbp,stoch=FALSE,coarse = FALSE,graph=FALSE) #deterministic version -->
+<!-- test$rec$prev <- test$rec$DD + test$rec$DU #total prevalence = to-be-detected + to-be-undetected -->
+<!-- test$rec$t <- 1:nrow(test$rec)             #time -->
+
+<!-- #ggplot(data=test$rec,aes(t,prev)) + geom_point()   #true prevalence -->
+
+<!-- ## dat0 is a data set with true quantities -->
+<!-- dat0 <- test$rec -->
+<!-- dat0$t <- 1:nrow(dat0) + P1$syear -1 -->
+
+<!-- ## dat1 omits all but one prevalence point -->
+<!-- dat1 <- dat0 -->
+<!-- dat1$prev100k <- NA -->
+<!-- dat1$prev100k[30] <- dat0$prev100k[30] -->
+<!-- dat1$dreg <- NA -->
+<!-- dat1$dreg[40:42] <- dat0$dreg[40:42] -->
+<!-- dat1$notes[1:20] <- NA -->
+
+<!-- ## add in a replicate variable for plotting against simulation of several runs below -->
+<!-- dat1$replicate <- dat0$replicate <- 0 -->
 
 
-```
+<!-- testocsp <- condsimmer(dat=dat1,P1,tbp,n=0,show=TRUE,truedat=dat0,V=(dat1$prev100k/10),west=1) #n=0 plots data only -->
+<!-- testocsp <- condsimmer(dat=NULL,P1,tbp,n=50,show=TRUE,truedat=dat0,V=(dat1$prev100k/10),west=1) #no conditioning, more vars -->
+
+<!-- testocsp <- condsimmer(dat=dat1,P1,tbp,n=50,show=TRUE,truedat=dat0,V=(dat1$prev100k/10),west=1) -->
+
+<!-- P <- getCountryAimParms('MWI') #MWI -->
+<!-- P1 <- getCountryAimParms('CHN') #MWI -->
+<!-- #ndat<- getCountryTBData(P1) -->
+<!-- ##testocsp <- condsimmer(dat=ndat$dat,P1,tbp,n=0,show=TRUE,truedat=dat0,V=ndat$V,west=1) #n=0 plots data only -->
+<!-- testocsp <- condsimmer(dat=P1$dat,P1,tbp,n=0,show=TRUE,truedat=NULL,V=P1$V,west=1) #n=0 plots data only -->
+
+
+<!-- P <- getCountryAimParms('MWI') #MWI -->
+
+<!-- #check data -->
+<!-- testocsp <- condsimmer(dat=NULL,n=0,P,as.list(rowMeans(rngs)),show=TRUE,truedat=P$dat,V=P$V/1, -->
+<!--                        west=1,stoch=0,coarse = 1) #unconditioned against data -->
+
+<!-- #optimize -->
+<!-- mappar <- getMAP(P) -->
+
+<!-- testocsp <- condsimmer(dat=NULL,n=1,P,mappar$par,show=TRUE,truedat=P$dat,V=P$V/1, -->
+<!--                        west=1,stoch=0,coarse = 1) #unconditioned against data -->
+
+
+<!-- testmc <- runMCMC(mappar$par,P,NI=50*2)                     #todo -->
+
+
+<!-- ``` -->

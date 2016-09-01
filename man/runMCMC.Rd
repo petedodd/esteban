@@ -2,6 +2,7 @@
 % Please edit documentation in R/utilities.R
 \name{runMCMC}
 \alias{runMCMC}
+\title{runMCMC - run MCMC approach to parameter inference}
 \usage{
 runMCMC(tbp, LLP, NI = 200, NW = 20, previous = NULL)
 }
@@ -16,11 +17,14 @@ runMCMC(tbp, LLP, NI = 200, NW = 20, previous = NULL)
 
 \item{previous}{}
 }
+\value{
+data.frame of multiple MCMC chains
+}
 \description{
-.. content for \description{} (no empty lines) ..
+Markov-chain Monte Carlo model parameter inference
 }
 \details{
-.. content for \details{} ..
+content to be written
 }
 \author{
 Pete Dodd

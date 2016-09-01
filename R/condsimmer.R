@@ -1,14 +1,14 @@
 ##' A function for conditional simulation
 ##'
 ##' Content to be written
-##' @title condsimmer - conditional simulation NB needs the same col order in parms as used in ...TODO!
-##' @param dat
-##' @param PL
-##' @param tbpl
-##' @param n
-##' @param quants
-##' @param obs
-##' @param V
+##' @title condsimmer (un)conditional simulation and graphing
+##' @param dat data to condition to (as in the dat slot of country parameters); NULL if no conditioning
+##' @param PL country parameters as built by getCountryAimParms 
+##' @param tbpl a list of model parameters
+##' @param n the number of simulations; overwritten by nrow(tbpl) if this is a data.frame
+##' @param quants the unobserved quantities of interest
+##' @param obs the observed quanttities
+##' @param V the s.d. of prevalence observations
 ##' @return X a long-form data frame of observed and unobserved quantities
 ##' @author Pete Dodd
 ##' @import scales

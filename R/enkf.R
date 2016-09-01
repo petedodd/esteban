@@ -1,5 +1,6 @@
 ## numerically stable backsolving via cholesky decomp
 bsi <- function(CH,v) backsolve(CH,backsolve(CH, v, transpose = TRUE))
+
 ##' An Ensemble Kalman Filter
 ##'
 ##' Content to be written

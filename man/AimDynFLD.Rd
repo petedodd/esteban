@@ -16,7 +16,7 @@ AimDynFLD(P, tbp, stoch = FALSE, coarse = FALSE, graph = FALSE,
 ans list .... TODO
 }
 \description{
-A function for running the AIM dynamics with infection (fortran version)
+A function for running the AIM HIV/demo dynamics with TB dynamics added
 }
 \details{
 Content to be written
